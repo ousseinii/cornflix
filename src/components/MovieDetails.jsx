@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FaArrowLeft } from "react-icons/fa";
 import { toast } from "react-toastify";
 import StarRating from "./StarRating";
 import Loader from "./Loader";
+import { useKey } from "../hooks/useKey";
 
 const KEY = "59350f2c";
+
 export default function MovieDetails({
   selelectedId,
   onCloseMovie,
@@ -14,6 +16,11 @@ export default function MovieDetails({
   const [movie, setMovie] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [userRating, setUserRating] = useState("");
+  const countRef = useRef(0);
+
+  useEffect(() => {
+    if (userRating) countRef.current++;
+  }, [userRating]);
 
   const isWatched = watched.map((movie) => movie.imdbID).includes(selelectedId);
   const watchedUserRating = watched.find(
@@ -42,6 +49,7 @@ export default function MovieDetails({
       imdbRating: Number(imdbRating),
       runtime: Number(runtime.split(" ").at(0)),
       userRating,
+      countRatingDecisions: countRef.current,
     };
 
     onAddWatched(newWatchedMovie);
@@ -49,18 +57,7 @@ export default function MovieDetails({
     toast.success("Film ajouté !");
   }
 
-  useEffect(() => {
-    function callback(e) {
-      if (e.code === "Escape") {
-        onCloseMovie();
-      }
-    }
-    document.addEventListener("keydown", callback);
-
-    return function () {
-      document.removeEventListener("keydown", callback);
-    };
-  }, [onCloseMovie]);
+  useKey("Escape", onCloseMovie);
 
   useEffect(() => {
     async function getMoviesDetails() {
@@ -82,7 +79,7 @@ export default function MovieDetails({
     document.title = `Film | ${title}`;
 
     return function () {
-      document.title = "usePopcorn";
+      document.title = "CornFlix";
     };
   }, [title]);
 
@@ -109,7 +106,6 @@ export default function MovieDetails({
               </p>
             </div>
           </header>
-
           <section>
             <div className="rating">
               {!isWatched ? (

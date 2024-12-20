@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { useLocalStorageState } from "./hooks/useLocalStorageState";
+import { useMovies } from "./hooks/useMovies";
 import Navbar from "./components/Navbar";
 import Search from "./components/Search";
 import NumResults from "./components/NumResults";
@@ -11,16 +12,13 @@ import WatchSummary from "./components/WatchSummary";
 import MovieList from "./components/MovieList";
 import WatchedMoviesList from "./components/WatchedMoviesList";
 import ErrorMessage from "./components/ErrorMessage";
-
-const KEY = process.env.REACT_APP_API_KEY;
+import "react-toastify/dist/ReactToastify.css";
 
 export default function App() {
   const [query, setQuery] = useState("");
-  const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const [selelectedId, setSelectedId] = useState(null);
+  const { movies, isLoading, error } = useMovies(query);
+  const [watched, setWatched] = useLocalStorageState([], "watched");
 
   function handleSelecteMovie(id) {
     setSelectedId((selelectedId) => (id === selelectedId ? null : id));
@@ -38,57 +36,6 @@ export default function App() {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
     toast.error("Film retiré !");
   }
-
-  useEffect(
-    function () {
-      const controller = new AbortController();
-
-      async function fetchMovies() {
-        try {
-          setIsLoading(true);
-          setError("");
-
-          const res = await fetch(
-            `http://www.omdbapi.com/?i=tt3896198&apikey=${KEY}&s=${query}`,
-            { signal: controller.signal }
-          );
-
-          if (!res.ok)
-            throw new Error(
-              "Une erreur est survenue lors de la récupération des films"
-            );
-
-          const data = await res.json();
-
-          if (data.Response === "False") throw new Error("Film non trouvé");
-
-          setMovies(data.Search);
-          setError("");
-        } catch (err) {
-          if (err.name !== "AbortError") {
-            console.log(err.message);
-            setError(err.message);
-          }
-        } finally {
-          setIsLoading(false);
-        }
-      }
-
-      if (query.length < 3) {
-        setMovies([]);
-        setError("");
-        return;
-      }
-
-      handleCloseMovie();
-      fetchMovies();
-
-      return function () {
-        controller.abort();
-      };
-    },
-    [query]
-  );
 
   return (
     <>
